@@ -1,0 +1,2 @@
+# Application
+Hello, this is a AI Maintenance Planner — A web application for prioritizing equipment maintenance issues using risk scoring, natural language work order generation, and utility asset management logic.
