@@ -2,7 +2,13 @@ import streamlit as st
 
 st.title("AI Maintenance Planner")
 
-equipment_type = st.text_input("Equipment Type")
+equipment_type = st.selectbox(
+    "Equipment Type",
+    [
+        "Rotating Equipment",
+        "Non-Rotating Equipment",
+    ],
+)
 issue_description = st.text_area("Issue Description")
 
 severity = st.slider("Severity", 1, 10, 5)
@@ -34,5 +40,3 @@ if st.button("Generate Maintenance Recommendation"):
         f"Reported condition: {issue_description}. "
         f"Priority level: {priority}. Recommended action: {recommendation}"
     )
-
-
