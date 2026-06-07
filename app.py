@@ -5,48 +5,90 @@ import re
 from textwrap import dedent
 
 
+TENSE_LIKELIHOOD = {
+    "present": 10,
+    "future": 7,
+    "past": 4,
+    "negative": 0,
+}
+
 MAINTENANCE_RULES = [
     {
-        "keywords": ["leak", "leaking", "seepage", "drip"],
-        "recommendation": "Check for active leakage, isolate if needed, inspect seals, gaskets, flanges, and nearby corrosion.",
-        "severity": 8,
-        "likelihood": 7,
-    },
-    {
-        "keywords": ["corrosion", "rust", "pitting", "wall loss"],
-        "recommendation": "Perform visual inspection and thickness testing, document affected areas, and evaluate repair or replacement.",
-        "severity": 7,
-        "likelihood": 6,
-    },
-    {
-        "keywords": ["vibration", "shaking", "noise", "rattling"],
-        "recommendation": "Inspect supports, alignment, bearings, fasteners, and operating conditions for abnormal vibration or looseness.",
-        "severity": 6,
-        "likelihood": 6,
-    },
-    {
-        "keywords": ["overheating", "hot", "temperature", "high temp"],
-        "recommendation": "Check temperature readings, verify cooling or heat transfer performance, and inspect insulation or fouling.",
-        "severity": 7,
-        "likelihood": 5,
-    },
-    {
-        "keywords": ["pressure", "high pressure", "low pressure", "pressure drop"],
-        "recommendation": "Verify pressure instruments, check valves and restrictions, and review operating limits before continued operation.",
-        "severity": 8,
-        "likelihood": 5,
-    },
-    {
-        "keywords": ["crack", "cracked", "fracture"],
-        "recommendation": "Remove from service if structural integrity is uncertain, perform NDE inspection, and escalate for engineering review.",
+        "recommendation": "Isolate if needed.",
+        "keywords": {
+            "present": ["leak", "leaking", "seepage", "drip", "dripping"],
+            "past": ["leaked", "was leaking", "seeped", "dripped"],
+            "future": ["will leak", "may leak", "could leak", "expected to leak"],
+            "negative": ["not leaking", "no leak", "no leakage", "not dripping"],
+        },
         "severity": 10,
-        "likelihood": 7,
+        
     },
     {
-        "keywords": ["fouling", "plugged", "clogged", "blocked", "restriction"],
+        "recommendation": "Perform thickness testing.",
+        "keywords": {
+            "present": ["corrosion", "rust", "pitting", "wall loss", "corroding"],
+            "past": ["corroded", "rusted", "pitted", "lost wall thickness"],
+            "future": ["will corrode", "may corrode", "could corrode", "expected to corrode"],
+            "negative": ["not corroding", "no corrosion", "no rust", "no pitting"],
+        },
+        "severity": 4,
+        
+    },
+    {
+        "recommendation": "Inspect supports, alignment, bearings, fasteners, and operating conditions for abnormal vibration or looseness.",
+        "keywords": {
+            "present": ["vibration", "vibrating", "shaking", "noise", "rattling"],
+            "past": ["vibrated", "was vibrating", "shook", "rattled", "made noise"],
+            "future": ["will vibrate", "may vibrate", "could vibrate", "expected to vibrate"],
+            "negative": ["not vibrating", "no vibration", "not shaking", "no noise", "not rattling"],
+        },
+        "severity": 7,
+        
+    },
+    {
+        "recommendation": "Check temperature readings, verify cooling or heat transfer performance, and inspect insulation or fouling.",
+        "keywords": {
+            "present": ["overheating", "hot", "temperature", "high temp", "high temperature"],
+            "past": ["overheated", "was hot", "ran hot", "had high temperature"],
+            "future": ["will overheat", "may overheat", "could overheat", "expected to overheat"],
+            "negative": ["not overheating", "not hot", "no high temperature", "normal temperature"],
+        },
+        "severity": 7,
+        
+    },
+    {
+        "recommendation": "Verify pressure instruments, check valves and restrictions, and review operating limits before continued operation.",
+        "keywords": {
+            "present": ["pressure", "high pressure", "low pressure", "pressure drop"],
+            "past": ["pressurized", "lost pressure", "dropped pressure", "had pressure drop"],
+            "future": ["will pressurize", "may lose pressure", "could lose pressure", "expected pressure drop"],
+            "negative": ["no pressure issue", "no pressure drop", "not pressurized", "pressure normal"],
+        },
+        "severity": 8,
+        
+    },
+    {
+        "recommendation": "Remove from service if structural integrity is uncertain, perform NDE inspection, and escalate for engineering review.",
+        "keywords": {
+            "present": ["crack", "cracking", "fracture", "fracturing"],
+            "past": ["cracked", "fractured", "was cracked", "had fractured"],
+            "future": ["will crack", "may crack", "could crack", "expected to crack"],
+            "negative": ["not cracked", "no crack", "no cracking", "no fracture"],
+        },
+        "severity": 10,
+        
+    },
+    {
         "recommendation": "Inspect for fouling or blockage, review flow performance, and schedule cleaning or flushing if confirmed.",
-        "severity": 5,
-        "likelihood": 7,
+        "keywords": {
+            "present": ["fouling", "plugging", "clogging", "blocked", "restriction"],
+            "past": ["fouled", "plugged", "clogged", "was blocked", "restricted"],
+            "future": ["will foul", "may plug", "could clog", "expected to block"],
+            "negative": ["not fouled", "not plugged", "not clogged", "not blocked", "no restriction"],
+        },
+        "severity": 4,
+        
     },
 ]
 
@@ -74,29 +116,36 @@ NON_ROTATING_EQUIPMENT_KEYWORDS = {
 
 
 def find_issue_recommendations(issue_description):
-    description = issue_description.lower()
-    matches = []
+    matches = detect_all_maintenance_keywords_from_issue(issue_description)
+    recommendations = []
 
-    for rule in MAINTENANCE_RULES:
-        if any(keyword in description for keyword in rule["keywords"]):
-            matches.append(rule["recommendation"])
+    for _, recommendation, *_ in matches:
+        if recommendation not in recommendations:
+            recommendations.append(recommendation)
 
-    return matches
+    return recommendations
+
+
+def get_rule_keywords(rule):
+    return [keyword for _, keyword, _ in get_rule_keyword_entries(rule)]
+
+
+def get_rule_keyword_entries(rule):
+    return [
+        (tense, keyword, TENSE_LIKELIHOOD[tense])
+        for tense, tense_keywords in rule["keywords"].items()
+        for keyword in tense_keywords
+    ]
 
 
 def calculate_issue_scores(issue_description):
-    description = issue_description.lower()
-    matched_rules = [
-        rule
-        for rule in MAINTENANCE_RULES
-        if any(keyword in description for keyword in rule["keywords"])
-    ]
+    matches = detect_all_maintenance_keywords_from_issue(issue_description)
 
-    if not matched_rules:
+    if not matches:
         return None, None
 
-    severity = max(rule["severity"] for rule in matched_rules)
-    likelihood = max(rule["likelihood"] for rule in matched_rules)
+    severity = max(match[4] for match in matches)
+    likelihood = max(match[5] for match in matches)
     return severity, likelihood
 
 
@@ -116,7 +165,7 @@ def show_risk_grid(severity, likelihood):
 
     if severity is not None and likelihood is not None:
         dot_row = 3 - score_to_grid_position(severity)
-        dot_column = score_to_grid_position(likelihood)
+        dot_column = 3 - score_to_grid_position(likelihood)
 
     rows = []
     for row in range(4):
@@ -200,35 +249,110 @@ def show_risk_grid(severity, likelihood):
     )
 
 
-def format_issue_description(issue_description, selected_option):
-    formatted_description = html.escape(issue_description)
-
-    for equipment, keywords in NON_ROTATING_EQUIPMENT_KEYWORDS.items():
-        should_cross_out = equipment != selected_option
-
-        for keyword in sorted(keywords, key=len, reverse=True):
-            escaped_keyword = html.escape(keyword)
-            pattern = re.compile(rf"\b({re.escape(escaped_keyword)})\b", re.IGNORECASE)
-
-            if should_cross_out:
-                formatted_description = pattern.sub(
-                    r"<span style='text-decoration: line-through; color: #9ca3af;'>\1</span>",
-                    formatted_description,
-                )
-
-    return formatted_description.replace("\n", "<br>")
-
-
-def detect_equipment_from_issue(issue_description):
+def detect_equipment_match_from_issue(issue_description):
     earliest_match = None
 
     for equipment, keywords in NON_ROTATING_EQUIPMENT_KEYWORDS.items():
         for keyword in keywords:
             match = re.search(rf"\b{re.escape(keyword)}\b", issue_description, re.IGNORECASE)
             if match and (earliest_match is None or match.start() < earliest_match[0]):
-                earliest_match = (match.start(), equipment)
+                earliest_match = (match.start(), equipment, match.group(0))
 
-    return earliest_match[1] if earliest_match else None
+    if earliest_match is None:
+        return None, None
+
+    return earliest_match[1], earliest_match[2]
+
+
+def detect_equipment_from_issue(issue_description):
+    detected_equipment, _ = detect_equipment_match_from_issue(issue_description)
+    return detected_equipment
+
+
+def detect_all_equipment_from_issue(issue_description):
+    matches = []
+
+    for equipment, keywords in NON_ROTATING_EQUIPMENT_KEYWORDS.items():
+        for keyword in keywords:
+            match = re.search(rf"\b{re.escape(keyword)}\b", issue_description, re.IGNORECASE)
+            if match:
+                matches.append((match.start(), equipment, match.group(0)))
+                break
+
+    return sorted(matches)
+
+
+def remove_equipment_phrases(issue_description):
+    cleaned_description = issue_description
+
+    equipment_keywords = [
+        keyword
+        for keywords in NON_ROTATING_EQUIPMENT_KEYWORDS.values()
+        for keyword in keywords
+    ]
+
+    for keyword in sorted(equipment_keywords, key=len, reverse=True):
+        cleaned_description = re.sub(
+            rf"\b{re.escape(keyword)}\b",
+            " ",
+            cleaned_description,
+            flags=re.IGNORECASE,
+        )
+
+    return cleaned_description
+
+
+def detect_maintenance_keyword_from_issue(issue_description):
+    matches = detect_all_maintenance_keywords_from_issue(issue_description)
+    return matches[0][2] if matches else None
+
+
+def find_keyword_matches(description, keyword_entries):
+    matches = []
+    occupied_spans = []
+
+    for tense, keyword, likelihood in sorted(
+        keyword_entries,
+        key=lambda keyword_entry: len(keyword_entry[1]),
+        reverse=True,
+    ):
+        for match in re.finditer(rf"\b{re.escape(keyword)}\b", description, re.IGNORECASE):
+            span = match.span()
+            overlaps_existing_match = any(
+                span[0] < existing_span[1] and existing_span[0] < span[1]
+                for existing_span in occupied_spans
+            )
+
+            if overlaps_existing_match:
+                continue
+
+            matches.append((match.start(), match.group(0), tense, likelihood))
+            occupied_spans.append(span)
+
+    return matches
+
+
+def detect_all_maintenance_keywords_from_issue(issue_description):
+    cleaned_description = remove_equipment_phrases(issue_description)
+    matches = []
+
+    for rule in MAINTENANCE_RULES:
+        for match_start, matched_keyword, tense, likelihood in find_keyword_matches(
+            cleaned_description,
+            get_rule_keyword_entries(rule),
+        ):
+            matches.append(
+                (
+                    match_start,
+                    rule["recommendation"],
+                    matched_keyword,
+                    tense,
+                    rule["severity"],
+                    likelihood,
+                )
+            )
+
+    return sorted(matches)
 
 
 def show_issue_description_preview(issue_description):
@@ -236,8 +360,13 @@ def show_issue_description_preview(issue_description):
         return
 
     detected_equipment = detect_equipment_from_issue(issue_description)
-    formatted_description = format_issue_description(issue_description, detected_equipment)
+    matched_keyword = detect_maintenance_keyword_from_issue(issue_description)
     st.markdown("**Filtered Issue Description**")
+
+    if detected_equipment is None and matched_keyword is None:
+        st.info("No non-rotating equipment or maintenance keyword detected.")
+        return
+
     st.markdown(
         f"""
         <div style="
@@ -249,11 +378,38 @@ def show_issue_description_preview(issue_description):
             color: #ffffff;
             line-height: 1.5;
         ">
-            {formatted_description}
+            <div><strong>Non-Rotating Equipment:</strong> {html.escape(detected_equipment or "Not detected")}</div>
+            <div><strong>Keyword Pulled:</strong> {html.escape(matched_keyword or "Not detected")}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+
+def show_ticket_split_suggestions(issue_description):
+    if not issue_description.strip():
+        return
+
+    equipment_matches = detect_all_equipment_from_issue(issue_description)
+    maintenance_matches = detect_all_maintenance_keywords_from_issue(issue_description)
+
+    if len(equipment_matches) > 1:
+        equipment_names = ", ".join(
+            html.escape(equipment) for _, equipment, _ in equipment_matches
+        )
+        st.warning(
+            "Consider creating separate tickets because multiple equipment items "
+            f"were detected: {equipment_names}."
+        )
+
+    if len(maintenance_matches) > 1:
+        keywords = ", ".join(
+            html.escape(keyword) for _, _, keyword, *_ in maintenance_matches
+        )
+        st.warning(
+            "Consider creating separate tickets because multiple maintenance "
+            f"keywords were detected: {keywords}."
+        )
 
 
 st.title("AI Maintenance Planner")
@@ -273,11 +429,6 @@ detected_equipment = None
 
 if equipment_type == "Non-Rotating Equipment":
     detected_equipment = detect_equipment_from_issue(issue_description)
-    st.text_input(
-        "Non-Rotating Equipment",
-        value=detected_equipment or "No equipment detected",
-        disabled=True,
-    )
 
 selected_equipment = (
     detected_equipment
@@ -286,12 +437,17 @@ selected_equipment = (
 )
 
 if equipment_type == "Non-Rotating Equipment":
+    show_ticket_split_suggestions(issue_description)
     show_issue_description_preview(issue_description)
 
 severity, likelihood = calculate_issue_scores(issue_description)
 show_risk_grid(severity, likelihood)
 
-risk_score = round((severity + likelihood) / 20 * 100) if severity and likelihood else 0
+risk_score = (
+    round((severity + likelihood) / 20 * 100)
+    if severity is not None and likelihood is not None
+    else 0
+)
 
 if st.button("Generate Maintenance Recommendation"):
     issue_recommendations = find_issue_recommendations(issue_description)
