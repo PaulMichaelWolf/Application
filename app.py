@@ -312,7 +312,7 @@ def show_risk_grid(severity, likelihood):
     components.html(
         dedent(
             f"""
-        <div style="margin: 8px 0 24px;">
+        <div style="margin: 8px 0 4px;">
             <div
                 style="
                     width: 224px;
@@ -525,6 +525,28 @@ def sync_likelihood_override(suggested_likelihood):
         st.session_state["likelihood_override"] = default_likelihood
 
 
+def sync_severity_override(suggested_severity):
+    default_severity = suggested_severity if suggested_severity is not None else 0
+
+    if st.session_state.get("severity_suggestion") != default_severity:
+        st.session_state["severity_suggestion"] = default_severity
+        st.session_state["severity_override"] = default_severity
+
+
+def get_query_int(name):
+    value = st.query_params.get(name)
+
+    if isinstance(value, list):
+        value = value[0] if value else None
+
+    try:
+        parsed_value = int(value)
+    except (TypeError, ValueError):
+        return None
+
+    return max(0, min(10, parsed_value))
+
+
 def show_likelihood_override_slider(suggested_likelihood):
     sync_likelihood_override(suggested_likelihood)
     current_likelihood = st.session_state.get("likelihood_override", 0)
@@ -536,7 +558,7 @@ def show_likelihood_override_slider(suggested_likelihood):
             width: 224px;
             margin-left: 35px;
             position: relative;
-            top: 62px;
+            top: 15px;
             z-index: 5;
             pointer-events: none;
             text-align: center;
@@ -549,8 +571,9 @@ def show_likelihood_override_slider(suggested_likelihood):
         }}
         div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
             + div[data-testid="stElementContainer"] div[data-testid="stSlider"] {{
-                width: 224px;
+                width: 235px;
                 margin-left: 35px;
+                margin-top: -50px;
         }}
         div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
             + div[data-testid="stElementContainer"] div[data-baseweb="slider"] > div {{
@@ -621,10 +644,177 @@ def show_likelihood_override_slider(suggested_likelihood):
     )
     st.markdown("<span class='likelihood-slider-marker'></span>", unsafe_allow_html=True)
     return st.select_slider(
-        "Likelihood",
+        "User Override Likelihood Value (0-10)",
         options=list(range(10, -1, -1)),
         key="likelihood_override",
     )
+
+
+def show_severity_override_slider(suggested_severity):
+    sync_severity_override(suggested_severity)
+    query_severity = get_query_int("severity_override")
+
+    if query_severity is not None:
+        st.session_state["severity_override"] = query_severity
+
+    current_severity = st.session_state.get("severity_override", 0)
+    red_fill_start = (10 - current_severity) * 10
+
+    components.html(
+        dedent(
+            f"""
+            <div class="severity-control">
+                <div class="severity-label">User Override Severity Value (0-10)</div>
+                <div
+                    id="severity-track"
+                    class="severity-track"
+                    role="slider"
+                    aria-label="User Override Severity Value"
+                    aria-valuemin="0"
+                    aria-valuemax="10"
+                    aria-valuenow="{current_severity}"
+                    tabindex="0"
+                >
+                    <div id="severity-fill" class="severity-fill"></div>
+                    <div id="severity-value" class="severity-value">{current_severity}</div>
+                </div>
+            </div>
+
+            <style>
+            body {{
+                margin: 0;
+                background: transparent;
+                color: #ffffff;
+                font-family: sans-serif;
+            }}
+            .severity-control {{
+                height: 400px;
+                width: 190px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+            }}
+            .severity-label {{
+                width: 150px;
+                transform: rotate(-90deg);
+                transform-origin: center;
+                white-space: nowrap;
+                font-size: 14px;
+                font-weight: 600;
+                text-align: center;
+            }}
+            .severity-track {{
+                position: relative;
+                width: 36px;
+                height: 235px;
+                background: #4b5563;
+                cursor: ns-resize;
+                user-select: none;
+                touch-action: none;
+                overflow: hidden;
+                outline: none;
+            }}
+            .severity-fill {{
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: {red_fill_start}%;
+                bottom: 0;
+                background: #ff4b4b;
+            }}
+            .severity-value {{
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #ffffff;
+                font-size: 22px;
+                font-weight: 700;
+                line-height: 1;
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+                pointer-events: none;
+                z-index: 2;
+            }}
+            </style>
+
+            <script>
+            const initialValue = {current_severity};
+            let currentValue = initialValue;
+            const track = document.getElementById("severity-track");
+            const fill = document.getElementById("severity-fill");
+            const valueLabel = document.getElementById("severity-value");
+
+            function clamp(value, min, max) {{
+                return Math.min(max, Math.max(min, value));
+            }}
+
+            function render(value) {{
+                const fillStart = (10 - value) * 10;
+                fill.style.top = `${{fillStart}}%`;
+                valueLabel.textContent = value;
+                track.setAttribute("aria-valuenow", value);
+            }}
+
+            function valueFromPointer(event) {{
+                const rect = track.getBoundingClientRect();
+                const position = clamp(event.clientY - rect.top, 0, rect.height);
+                return Math.round(10 - (position / rect.height) * 10);
+            }}
+
+            function updateFromPointer(event) {{
+                currentValue = valueFromPointer(event);
+                render(currentValue);
+            }}
+
+            function commitValue() {{
+                if (currentValue === initialValue) {{
+                    return;
+                }}
+
+                const parentLocation = window.parent.location;
+                const params = new URLSearchParams(parentLocation.search);
+                params.set("severity_override", String(currentValue));
+                parentLocation.href = `${{parentLocation.pathname}}?${{params.toString()}}${{parentLocation.hash}}`;
+            }}
+
+            track.addEventListener("pointerdown", (event) => {{
+                track.setPointerCapture(event.pointerId);
+                updateFromPointer(event);
+            }});
+
+            track.addEventListener("pointermove", (event) => {{
+                if (event.buttons === 1) {{
+                    updateFromPointer(event);
+                }}
+            }});
+
+            track.addEventListener("pointerup", () => {{
+                commitValue();
+            }});
+
+            track.addEventListener("keydown", (event) => {{
+                if (event.key === "ArrowUp" || event.key === "ArrowRight") {{
+                    currentValue = clamp(currentValue + 1, 0, 10);
+                    render(currentValue);
+                    commitValue();
+                    event.preventDefault();
+                }}
+
+                if (event.key === "ArrowDown" || event.key === "ArrowLeft") {{
+                    currentValue = clamp(currentValue - 1, 0, 10);
+                    render(currentValue);
+                    commitValue();
+                    event.preventDefault();
+                }}
+            }});
+            </script>
+            """
+        ),
+        height=310,
+    )
+    return current_severity
 
 
 st.title("AI Maintenance Planner")
@@ -645,7 +835,22 @@ severity = None
 likelihood = None
 
 if equipment_type == "Non-Rotating Equipment":
-    issue_description = st.text_area("Issue Description")
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stElementContainer"]:has(.issue-description-marker)
+            + div[data-testid="stElementContainer"] textarea {
+                height: 80px !important;
+                min-height: 80px !important;
+                max-height: 80px !important;
+                resize: none !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("<span class='issue-description-marker'></span>", unsafe_allow_html=True)
+    issue_description = st.text_area("Issue Description", height=80)
     detected_equipment = detect_equipment_from_issue(issue_description)
 
 selected_equipment = (
@@ -657,11 +862,22 @@ selected_equipment = (
 if equipment_type == "Non-Rotating Equipment":
     show_ticket_split_suggestions(issue_description)
     show_issue_description_preview(issue_description)
-    severity, suggested_likelihood = calculate_issue_scores(issue_description)
-    risk_grid = st.empty()
-    likelihood = show_likelihood_override_slider(suggested_likelihood)
-    with risk_grid:
-        show_risk_grid(severity, likelihood)
+    suggested_severity, suggested_likelihood = calculate_issue_scores(issue_description)
+    matrix_column, severity_column = st.columns([3, 2])
+
+    with matrix_column:
+        risk_grid = st.empty()
+        likelihood = show_likelihood_override_slider(suggested_likelihood)
+
+    with severity_column:
+        severity = show_severity_override_slider(suggested_severity)
+
+    if suggested_severity is not None or suggested_likelihood is not None:
+        with risk_grid:
+            show_risk_grid(severity, likelihood)
+    else:
+        with risk_grid:
+            show_risk_grid(None, None)
 
 risk_score = (
     round((severity + likelihood) / 20 * 100)
