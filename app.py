@@ -8,6 +8,7 @@ from textwrap import dedent
 TENSE_LIKELIHOOD = {
     "present": 10,
     "future": 7,
+    "conditional": 7,
     "past": 4,
     "negative": 0,
 }
@@ -18,8 +19,20 @@ MAINTENANCE_RULES = [
         "keywords": {
             "present": ["leak", "leaking", "seepage", "drip", "dripping"],
             "past": ["leaked", "was leaking", "seeped", "dripped"],
-            "future": ["will leak", "may leak", "could leak", "expected to leak"],
-            "negative": ["not leaking", "no leak", "no leakage", "not dripping"],
+            "future": ["will leak", "may leak", "expected to leak"],
+            "conditional": ["could leak", "could be leaking", "may be leaking"],
+            "negative": [
+                "not leaking",
+                "no leak",
+                "no leakage",
+                "not dripping",
+                "does not have leak",
+                "does not have a leak",
+                "does not have leakage",
+                "doesn't have leak",
+                "doesn't have a leak",
+                "doesn't have leakage",
+            ],
         },
         "severity": 10,
         
@@ -29,8 +42,20 @@ MAINTENANCE_RULES = [
         "keywords": {
             "present": ["corrosion", "rust", "pitting", "wall loss", "corroding"],
             "past": ["corroded", "rusted", "pitted", "lost wall thickness"],
-            "future": ["will corrode", "may corrode", "could corrode", "expected to corrode"],
-            "negative": ["not corroding", "no corrosion", "no rust", "no pitting"],
+            "future": ["will corrode", "may corrode", "expected to corrode"],
+            "conditional": ["could corrode", "could be corroding", "may be corroding"],
+            "negative": [
+                "not corroding",
+                "no corrosion",
+                "no rust",
+                "no pitting",
+                "does not have corrosion",
+                "does not have rust",
+                "does not have pitting",
+                "doesn't have corrosion",
+                "doesn't have rust",
+                "doesn't have pitting",
+            ],
         },
         "severity": 4,
         
@@ -40,8 +65,21 @@ MAINTENANCE_RULES = [
         "keywords": {
             "present": ["vibration", "vibrating", "shaking", "noise", "rattling"],
             "past": ["vibrated", "was vibrating", "shook", "rattled", "made noise"],
-            "future": ["will vibrate", "may vibrate", "could vibrate", "expected to vibrate"],
-            "negative": ["not vibrating", "no vibration", "not shaking", "no noise", "not rattling"],
+            "future": ["will vibrate", "may vibrate", "expected to vibrate"],
+            "conditional": ["could vibrate", "could be vibrating", "may be vibrating"],
+            "negative": [
+                "not vibrating",
+                "no vibration",
+                "not shaking",
+                "no noise",
+                "not rattling",
+                "does not have vibration",
+                "does not have noise",
+                "does not have rattling",
+                "doesn't have vibration",
+                "doesn't have noise",
+                "doesn't have rattling",
+            ],
         },
         "severity": 7,
         
@@ -51,8 +89,18 @@ MAINTENANCE_RULES = [
         "keywords": {
             "present": ["overheating", "hot", "temperature", "high temp", "high temperature"],
             "past": ["overheated", "was hot", "ran hot", "had high temperature"],
-            "future": ["will overheat", "may overheat", "could overheat", "expected to overheat"],
-            "negative": ["not overheating", "not hot", "no high temperature", "normal temperature"],
+            "future": ["will overheat", "may overheat", "expected to overheat"],
+            "conditional": ["could overheat", "could be overheating", "may be overheating"],
+            "negative": [
+                "not overheating",
+                "not hot",
+                "no high temperature",
+                "normal temperature",
+                "does not have high temperature",
+                "does not have overheating",
+                "doesn't have high temperature",
+                "doesn't have overheating",
+            ],
         },
         "severity": 7,
         
@@ -62,8 +110,18 @@ MAINTENANCE_RULES = [
         "keywords": {
             "present": ["pressure", "high pressure", "low pressure", "pressure drop"],
             "past": ["pressurized", "lost pressure", "dropped pressure", "had pressure drop"],
-            "future": ["will pressurize", "may lose pressure", "could lose pressure", "expected pressure drop"],
-            "negative": ["no pressure issue", "no pressure drop", "not pressurized", "pressure normal"],
+            "future": ["will pressurize", "may lose pressure", "expected pressure drop"],
+            "conditional": ["could lose pressure", "could have pressure drop", "may be losing pressure"],
+            "negative": [
+                "no pressure issue",
+                "no pressure drop",
+                "not pressurized",
+                "pressure normal",
+                "does not have pressure issue",
+                "does not have pressure drop",
+                "doesn't have pressure issue",
+                "doesn't have pressure drop",
+            ],
         },
         "severity": 8,
         
@@ -73,8 +131,22 @@ MAINTENANCE_RULES = [
         "keywords": {
             "present": ["crack", "cracking", "fracture", "fracturing"],
             "past": ["cracked", "fractured", "was cracked", "had fractured"],
-            "future": ["will crack", "may crack", "could crack", "expected to crack"],
-            "negative": ["not cracked", "no crack", "no cracking", "no fracture"],
+            "future": ["will crack", "may crack", "expected to crack"],
+            "conditional": ["could crack", "could be cracking", "may be cracking"],
+            "negative": [
+                "not cracked",
+                "no crack",
+                "no cracking",
+                "no fracture",
+                "does not have crack",
+                "does not have a crack",
+                "does not have cracking",
+                "does not have fracture",
+                "doesn't have crack",
+                "doesn't have a crack",
+                "doesn't have cracking",
+                "doesn't have fracture",
+            ],
         },
         "severity": 10,
         
@@ -84,8 +156,25 @@ MAINTENANCE_RULES = [
         "keywords": {
             "present": ["fouling", "plugging", "clogging", "blocked", "restriction"],
             "past": ["fouled", "plugged", "clogged", "was blocked", "restricted"],
-            "future": ["will foul", "may plug", "could clog", "expected to block"],
-            "negative": ["not fouled", "not plugged", "not clogged", "not blocked", "no restriction"],
+            "future": ["will foul", "may plug", "expected to block"],
+            "conditional": ["could clog", "could be clogged", "could block", "may be clogging"],
+            "negative": [
+                "not fouled",
+                "not plugged",
+                "not clogged",
+                "not blocked",
+                "no restriction",
+                "does not have fouling",
+                "does not have plugging",
+                "does not have clogging",
+                "does not have blockage",
+                "does not have restriction",
+                "doesn't have fouling",
+                "doesn't have plugging",
+                "doesn't have clogging",
+                "doesn't have blockage",
+                "doesn't have restriction",
+            ],
         },
         "severity": 4,
         
@@ -144,6 +233,10 @@ def calculate_issue_scores(issue_description):
     if not matches:
         return None, None
 
+    pulled_keyword_match = matches[0]
+    if pulled_keyword_match[3] == "negative":
+        return 0, pulled_keyword_match[5]
+
     severity = max(match[4] for match in matches)
     likelihood = max(match[5] for match in matches)
     return severity, likelihood
@@ -162,6 +255,12 @@ def score_to_grid_position(score):
 def show_risk_grid(severity, likelihood):
     dot_row = None
     dot_column = None
+    risk_colors = [
+        ["#ef3b2d", "#ef3b2d", "#ff8a00", "#f4e04d"],
+        ["#ef3b2d", "#ff8a00", "#f4e04d", "#8bd646"],
+        ["#ff8a00", "#f4e04d", "#8bd646", "#42b549"],
+        ["#f4e04d", "#8bd646", "#42b549", "#42b549"],
+    ]
 
     if severity is not None and likelihood is not None:
         dot_row = 3 - score_to_grid_position(severity)
@@ -172,6 +271,7 @@ def show_risk_grid(severity, likelihood):
         cells = []
         for column in range(4):
             dot_html = ""
+            cell_color = risk_colors[row][column]
             if row == dot_row and column == dot_column:
                 dot_html = dedent(
                     """
@@ -199,7 +299,7 @@ def show_risk_grid(severity, likelihood):
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        background: #f9fafb;
+                        background: {cell_color};
                     "
                 >
                     {dot_html}
@@ -307,6 +407,10 @@ def detect_maintenance_keyword_from_issue(issue_description):
     return matches[0][2] if matches else None
 
 
+def display_keyword(keyword):
+    return keyword[:1].upper() + keyword[1:] if keyword else keyword
+
+
 def find_keyword_matches(description, keyword_entries):
     matches = []
     occupied_spans = []
@@ -379,7 +483,7 @@ def show_issue_description_preview(issue_description):
             line-height: 1.5;
         ">
             <div><strong>Non-Rotating Equipment:</strong> {html.escape(detected_equipment or "Not detected")}</div>
-            <div><strong>Keyword Pulled:</strong> {html.escape(matched_keyword or "Not detected")}</div>
+            <div><strong>Keyword Pulled:</strong> {html.escape(display_keyword(matched_keyword) or "Not detected")}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -404,12 +508,123 @@ def show_ticket_split_suggestions(issue_description):
 
     if len(maintenance_matches) > 1:
         keywords = ", ".join(
-            html.escape(keyword) for _, _, keyword, *_ in maintenance_matches
+            html.escape(display_keyword(keyword))
+            for _, _, keyword, *_ in maintenance_matches
         )
         st.warning(
             "Consider creating separate tickets because multiple maintenance "
             f"keywords were detected: {keywords}."
         )
+
+
+def sync_likelihood_override(suggested_likelihood):
+    default_likelihood = suggested_likelihood if suggested_likelihood is not None else 0
+
+    if st.session_state.get("likelihood_suggestion") != default_likelihood:
+        st.session_state["likelihood_suggestion"] = default_likelihood
+        st.session_state["likelihood_override"] = default_likelihood
+
+
+def show_likelihood_override_slider(suggested_likelihood):
+    sync_likelihood_override(suggested_likelihood)
+    current_likelihood = st.session_state.get("likelihood_override", 0)
+    red_fill_start = (10 - current_likelihood) * 10
+    st.markdown(
+        f"""
+        <style>
+        .likelihood-value-label {{
+            width: 224px;
+            margin-left: 35px;
+            position: relative;
+            top: 62px;
+            z-index: 5;
+            pointer-events: none;
+            text-align: center;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 24px;
+            margin-bottom: -24px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+        }}
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[data-testid="stSlider"] {{
+                width: 224px;
+                margin-left: 35px;
+        }}
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[data-baseweb="slider"] > div {{
+                height: 10px !important;
+                min-height: 10px !important;
+                max-height: 10px !important;
+                background: linear-gradient(
+                    to right,
+                    #4b5563 0%,
+                    #4b5563 {red_fill_start}%,
+                    #ff4b4b {red_fill_start}%,
+                    #ff4b4b 100%
+                ) !important;
+        }}
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[data-baseweb="slider"] > div > div {{
+                height: 10px !important;
+                min-height: 10px !important;
+                max-height: 10px !important;
+                background: transparent !important;
+        }}
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[role="slider"] {{
+                width: 14px !important;
+                min-width: 14px !important;
+                max-width: 14px !important;
+                height: 14px !important;
+                min-height: 14px !important;
+                max-height: 14px !important;
+                background: transparent !important;
+                border: 0 !important;
+                box-shadow: none !important;
+                outline: none !important;
+                color: transparent !important;
+        }}
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[role="slider"]:hover,
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[role="slider"]:focus,
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[role="slider"]:active {{
+                width: 14px !important;
+                min-width: 14px !important;
+                max-width: 14px !important;
+                height: 14px !important;
+                min-height: 14px !important;
+                max-height: 14px !important;
+                transform: translate(-50%, -50%) !important;
+                background: transparent !important;
+                border: 0 !important;
+                box-shadow: none !important;
+                outline: none !important;
+        }}
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[role="slider"]::before,
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[role="slider"]::after {{
+                display: none !important;
+        }}
+        div[data-testid="stElementContainer"]:has(.likelihood-slider-marker)
+            + div[data-testid="stElementContainer"] div[data-baseweb="slider"] div {{
+                color: transparent !important;
+        }}
+        </style>
+        <div class="likelihood-value-label">{current_likelihood}</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("<span class='likelihood-slider-marker'></span>", unsafe_allow_html=True)
+    return st.select_slider(
+        "Likelihood",
+        options=list(range(10, -1, -1)),
+        key="likelihood_override",
+    )
 
 
 st.title("AI Maintenance Planner")
@@ -424,10 +639,13 @@ equipment_type = st.selectbox(
     key="equipment_type_category",
 )
 
-issue_description = st.text_area("Issue Description")
+issue_description = ""
 detected_equipment = None
+severity = None
+likelihood = None
 
 if equipment_type == "Non-Rotating Equipment":
+    issue_description = st.text_area("Issue Description")
     detected_equipment = detect_equipment_from_issue(issue_description)
 
 selected_equipment = (
@@ -439,9 +657,11 @@ selected_equipment = (
 if equipment_type == "Non-Rotating Equipment":
     show_ticket_split_suggestions(issue_description)
     show_issue_description_preview(issue_description)
-
-severity, likelihood = calculate_issue_scores(issue_description)
-show_risk_grid(severity, likelihood)
+    severity, suggested_likelihood = calculate_issue_scores(issue_description)
+    risk_grid = st.empty()
+    likelihood = show_likelihood_override_slider(suggested_likelihood)
+    with risk_grid:
+        show_risk_grid(severity, likelihood)
 
 risk_score = (
     round((severity + likelihood) / 20 * 100)
@@ -449,7 +669,7 @@ risk_score = (
     else 0
 )
 
-if st.button("Generate Maintenance Recommendation"):
+if equipment_type == "Non-Rotating Equipment" and st.button("Generate Maintenance Recommendation"):
     issue_recommendations = find_issue_recommendations(issue_description)
 
     st.subheader("Result")
